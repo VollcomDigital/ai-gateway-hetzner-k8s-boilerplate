@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: litellm-proxy-config
+  namespace: litellm
+data:
+  proxy_server_config.yaml: |
+    model_list:
+      - model_name: gpt-4o-mini
+        litellm_params:
+          model: openai/gpt-4o-mini
+          api_key: os.environ/OPENAI_API_KEY
+      - model_name: claude-3-5-sonnet
+        litellm_params:
+          model: anthropic/claude-3-5-sonnet-latest
+          api_key: os.environ/ANTHROPIC_API_KEY
+
+    litellm_settings:
+      drop_params: true
+      cache: true
+      cache_params:
+        type: redis
+        host: os.environ/REDIS_HOST
+        port: os.environ/REDIS_PORT
+
+    general_settings:
+      master_key: os.environ/PROXY_MASTER_KEY
+      store_model_in_db: true
