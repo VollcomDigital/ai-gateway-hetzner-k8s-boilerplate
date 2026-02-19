@@ -12,15 +12,22 @@ Core platform components like Terraform, ingress controllers, and cert-manager a
 
 ```text
 k8s/apps/litellm/
-  namespace.yaml
   helmrepository.yaml
   helmrelease.yaml
   configmap.yaml
   provider-keys-secret.yaml
+  kustomization.yaml
 
 k8s/apps/litellm-db/
+  namespace.yaml
   postgres.yaml
   redis.yaml
+  kustomization.yaml
+
+k8s/flux/
+  litellm-db-kustomization.yaml
+  litellm-kustomization.yaml
+  kustomization.yaml
 ```
 
 ## What this includes
@@ -46,6 +53,15 @@ Before syncing to the cluster, replace placeholder values:
      - `k8s/apps/litellm-db/redis.yaml`
 
 LiteLLM master key is read from `PROXY_MASTER_KEY` and is managed by the Helm chart (auto-generated unless you provide your own secret).
+
+## Flux GitOps Sync
+
+This repo includes Flux `Kustomization` resources in `k8s/flux`:
+
+- `litellm-db` reconciles `./k8s/apps/litellm-db`
+- `litellm` reconciles `./k8s/apps/litellm` and `dependsOn: litellm-db`
+
+To activate this stack in an existing Flux installation, include `k8s/flux` in your cluster-level GitRepository/Kustomization entrypoint (or apply `k8s/flux/kustomization.yaml` from your existing root).
 
 ## Developer Access with Virtual Keys
 
