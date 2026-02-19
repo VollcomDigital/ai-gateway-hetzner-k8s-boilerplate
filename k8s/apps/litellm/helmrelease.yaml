@@ -1,0 +1,77 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: litellm
+  namespace: litellm
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: litellm-helm
+      version: "0.1.x"          # pin to latest stable; update as needed
+      sourceRef:
+        kind: HelmRepository
+        name: litellm
+        namespace: flux-system
+      interval: 1h
+  values:
+    replicaCount: 2
+
+    image:
+      repository: ghcr.io/berriai/litellm
+      tag: main-stable
+      pullPolicy: IfNotPresent
+
+    service:
+      type: ClusterIP
+      port: 4000
+
+    ingress:
+      enabled: true
+      className: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+      hosts:
+        - host: ai-gateway.example.com      # CHANGE: your domain
+          paths:
+            - path: /
+              pathType: Prefix
+      tls:
+        - secretName: litellm-tls
+          hosts:
+            - ai-gateway.example.com         # CHANGE: your domain
+
+    env:
+      - name: DATABASE_URL
+        valueFrom:
+          secretKeyRef:
+            name: litellm-db-credentials
+            key: DATABASE_URL
+      - name: REDIS_HOST
+        value: redis.litellm-db.svc.cluster.local
+      - name: REDIS_PORT
+        value: "6379"
+      - name: LITELLM_MASTER_KEY
+        valueFrom:
+          secretKeyRef:
+            name: litellm-secrets
+            key: LITELLM_MASTER_KEY
+
+    volumeMounts:
+      - name: litellm-config
+        mountPath: /app/proxy_server_config.yaml
+        subPath: proxy_server_config.yaml
+        readOnly: true
+
+    volumes:
+      - name: litellm-config
+        configMap:
+          name: litellm-config
+
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
