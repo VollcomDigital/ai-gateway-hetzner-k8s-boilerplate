@@ -28,6 +28,9 @@ k8s/flux/
   litellm-db-kustomization.yaml
   litellm-kustomization.yaml
   kustomization.yaml
+
+k8s/clusters/production/
+  kustomization.yaml
 ```
 
 ## What this includes
@@ -62,6 +65,12 @@ This repo includes Flux `Kustomization` resources in `k8s/flux`:
 - `litellm` reconciles `./k8s/apps/litellm` and `dependsOn: litellm-db`
 
 To activate this stack in an existing Flux installation, include `k8s/flux` in your cluster-level GitRepository/Kustomization entrypoint (or apply `k8s/flux/kustomization.yaml` from your existing root).
+
+For a single-path bootstrap target, use:
+
+- `./k8s/clusters/production`
+
+`k8s/clusters/production/kustomization.yaml` includes `../../flux`, so Flux can be pointed at one directory and still reconcile both `litellm-db` then `litellm`.
 
 ## Developer Access with Virtual Keys
 
