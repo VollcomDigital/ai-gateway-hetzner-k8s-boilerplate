@@ -48,6 +48,7 @@ Before syncing to the cluster, replace placeholder values:
 1. `k8s/apps/litellm/provider-keys-secret.yaml`
    - `OPENAI_API_KEY`
    - `ANTHROPIC_API_KEY`
+   - For production: use a secret management tool. See `k8s/apps/litellm/SECRETS.md` (SOPS, External Secrets Operator, Sealed Secrets).
 2. `k8s/apps/litellm-db/postgres.yaml`
    - `litellm-db-secret` password values
 3. Storage class
