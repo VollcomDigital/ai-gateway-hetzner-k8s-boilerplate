@@ -40,15 +40,23 @@ spec:
             - containerPort: 6379
               name: redis
           readinessProbe:
-            tcpSocket:
-              port: 6379
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - test "$(redis-cli -h 127.0.0.1 -p 6379 ping)" = "PONG"
             initialDelaySeconds: 5
             periodSeconds: 10
+            timeoutSeconds: 5
           livenessProbe:
-            tcpSocket:
-              port: 6379
+            exec:
+              command:
+                - /bin/sh
+                - -ec
+                - test "$(redis-cli -h 127.0.0.1 -p 6379 ping)" = "PONG"
             initialDelaySeconds: 15
             periodSeconds: 10
+            timeoutSeconds: 5
           volumeMounts:
             - name: redis-data
               mountPath: /data
