@@ -15,11 +15,12 @@ k8s/apps/litellm/
   helmrepository.yaml
   helmrelease.yaml
   configmap.yaml
-  provider-keys-secret.yaml
+  provider-keys-secret.example.yaml
   kustomization.yaml
 
 k8s/apps/litellm-db/
   namespace.yaml
+  litellm-db-secret.example.yaml
   postgres.yaml
   redis.yaml
   kustomization.yaml
@@ -43,13 +44,39 @@ k8s/clusters/production/
 
 ## Initial Configuration
 
-Before syncing to the cluster, replace placeholder values:
+Do **not** store plaintext secrets in this Git repository. Create Secrets out-of-band using a secret management tool.
 
-1. `k8s/apps/litellm/provider-keys-secret.yaml`
-   - `OPENAI_API_KEY`
-   - `ANTHROPIC_API_KEY`
-2. `k8s/apps/litellm-db/postgres.yaml`
-   - `litellm-db-secret` password values
+Some common options in the Kubernetes ecosystem:
+
+- SOPS (Flux can decrypt SOPS-encrypted secrets during reconciliation)
+- External Secrets Operator (AWS/GCP/Vault/etc)
+- Sealed Secrets
+
+If you just need to bootstrap quickly, you can create the Secrets manually with `kubectl`:
+
+1. Provider keys for upstream model APIs:
+
+   - Example manifest: `k8s/apps/litellm/provider-keys-secret.example.yaml`
+   - Create:
+
+     ```bash
+     kubectl -n litellm create secret generic litellm-provider-keys \
+       --from-literal=OPENAI_API_KEY='...' \
+       --from-literal=ANTHROPIC_API_KEY='...'
+     ```
+
+2. Database credentials for Postgres:
+
+   - Example manifest: `k8s/apps/litellm-db/litellm-db-secret.example.yaml`
+   - Create:
+
+     ```bash
+     kubectl -n litellm create secret generic litellm-db-secret \
+       --from-literal=username='litellm' \
+       --from-literal=password='...' \
+       --from-literal=database='litellm'
+     ```
+
 3. Storage class
    - If your Hetzner CSI class is not `hcloud-volumes`, update `storageClassName` in:
      - `k8s/apps/litellm-db/postgres.yaml`

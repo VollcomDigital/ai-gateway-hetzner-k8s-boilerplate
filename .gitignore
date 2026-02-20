@@ -1,0 +1,5 @@
+# Plaintext secrets should never be committed. Create them out-of-band (SOPS/ESO)
+# or apply them manually (kubectl) during bootstrap.
+k8s/apps/litellm/provider-keys-secret.yaml
+k8s/apps/litellm-db/litellm-db-secret.yaml
+
