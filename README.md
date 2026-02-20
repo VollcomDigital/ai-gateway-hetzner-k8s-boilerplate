@@ -43,11 +43,19 @@ k8s/clusters/production/
 
 ## Initial Configuration
 
-Before syncing to the cluster, replace placeholder values:
+Before syncing to the cluster, create runtime secrets outside Git and adjust environment-specific defaults:
 
-1. `k8s/apps/litellm/provider-keys-secret.yaml`
-   - `OPENAI_API_KEY`
-   - `ANTHROPIC_API_KEY`
+1. Create provider key substitution secret in `flux-system` (do not commit provider keys to this repository):
+
+   ```bash
+   kubectl -n flux-system create secret generic litellm-provider-keys-vars \
+     --from-literal=OPENAI_API_KEY="sk-your-openai-key" \
+     --from-literal=ANTHROPIC_API_KEY="sk-ant-your-anthropic-key" \
+     --dry-run=client -o yaml | kubectl apply -f -
+   ```
+
+   Flux uses this secret to substitute values into `k8s/apps/litellm/provider-keys-secret.yaml` at reconcile time.
+
 2. `k8s/apps/litellm-db/postgres.yaml`
    - `litellm-db-secret` password values
 3. Storage class

@@ -8,6 +8,11 @@ spec:
   timeout: 5m
   wait: true
   prune: true
+  postBuild:
+    substituteFrom:
+      - kind: Secret
+        name: litellm-provider-keys-vars
+        optional: false
   dependsOn:
     - name: litellm-db
   sourceRef:
