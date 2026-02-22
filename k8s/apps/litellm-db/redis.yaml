@@ -34,7 +34,7 @@ spec:
         fsGroup: 999
       containers:
         - name: redis
-          image: redis:7.2-alpine
+          image: redis:7.2-alpine@sha256:65748f2ea686cb0e37a008cbe7024324db1d84abf57e917e1c2ec92b5e50f602
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false
