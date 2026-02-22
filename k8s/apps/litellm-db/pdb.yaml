@@ -1,0 +1,29 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: litellm-postgres
+  namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm-postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: litellm-hetzner-k8s-boilerplate
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: litellm-postgres
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: litellm-redis
+  namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm-redis
+    app.kubernetes.io/component: cache
+    app.kubernetes.io/part-of: litellm-hetzner-k8s-boilerplate
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: litellm-redis
