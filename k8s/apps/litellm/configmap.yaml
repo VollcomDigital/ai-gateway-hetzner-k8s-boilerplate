@@ -22,6 +22,7 @@ data:
         type: redis
         host: os.environ/REDIS_HOST
         port: os.environ/REDIS_PORT
+        password: os.environ/REDIS_PASSWORD
 
     general_settings:
       master_key: os.environ/PROXY_MASTER_KEY

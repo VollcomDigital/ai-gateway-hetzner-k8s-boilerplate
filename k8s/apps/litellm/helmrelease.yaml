@@ -51,3 +51,8 @@ spec:
         value: litellm-redis.litellm.svc.cluster.local
       - name: REDIS_PORT
         value: "6379"
+      - name: REDIS_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: litellm-db-secret
+            key: redis-password

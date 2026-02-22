@@ -49,10 +49,18 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: litellm-db-secret
+                  key: redis-password
           args:
             - redis-server
             - --appendonly
             - "yes"
+            - --requirepass
+            - $(REDIS_PASSWORD)
           ports:
             - containerPort: 6379
               name: redis
@@ -61,7 +69,7 @@ spec:
               command:
                 - /bin/sh
                 - -ec
-                - test "$(redis-cli -h 127.0.0.1 -p 6379 ping)" = "PONG"
+                - test "$(redis-cli -h 127.0.0.1 -p 6379 -a "${REDIS_PASSWORD}" --no-auth-warning ping)" = "PONG"
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 5
@@ -70,7 +78,7 @@ spec:
               command:
                 - /bin/sh
                 - -ec
-                - test "$(redis-cli -h 127.0.0.1 -p 6379 ping)" = "PONG"
+                - test "$(redis-cli -h 127.0.0.1 -p 6379 -a "${REDIS_PASSWORD}" --no-auth-warning ping)" = "PONG"
             initialDelaySeconds: 15
             periodSeconds: 10
             timeoutSeconds: 5

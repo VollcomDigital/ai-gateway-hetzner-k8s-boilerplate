@@ -74,7 +74,8 @@ If you just need to bootstrap quickly, you can create the Secrets manually with 
      kubectl -n litellm create secret generic litellm-db-secret \
        --from-literal=username='litellm' \
        --from-literal=password='...' \
-       --from-literal=database='litellm'
+       --from-literal=database='litellm' \
+       --from-literal=redis-password='...'
      ```
 
 3. Storage class
