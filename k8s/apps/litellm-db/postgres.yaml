@@ -3,6 +3,11 @@ kind: Service
 metadata:
   name: litellm-postgres
   namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm-postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: litellm-hetzner-k8s-boilerplate
+    app.kubernetes.io/managed-by: flux
 spec:
   selector:
     app: litellm-postgres
@@ -16,6 +21,11 @@ kind: Deployment
 metadata:
   name: litellm-postgres
   namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm-postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: litellm-hetzner-k8s-boilerplate
+    app.kubernetes.io/managed-by: flux
 spec:
   replicas: 1
   strategy:
@@ -27,6 +37,9 @@ spec:
     metadata:
       labels:
         app: litellm-postgres
+        app.kubernetes.io/name: litellm-postgres
+        app.kubernetes.io/component: database
+        app.kubernetes.io/part-of: litellm-hetzner-k8s-boilerplate
     spec:
       securityContext:
         runAsNonRoot: true
@@ -101,6 +114,10 @@ kind: PersistentVolumeClaim
 metadata:
   name: litellm-postgres-data
   namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm-postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: litellm-hetzner-k8s-boilerplate
 spec:
   accessModes:
     - ReadWriteOnce

@@ -3,6 +3,11 @@ kind: ConfigMap
 metadata:
   name: litellm-proxy-config
   namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm
+    app.kubernetes.io/component: proxy
+    app.kubernetes.io/part-of: litellm-hetzner-k8s-boilerplate
+    app.kubernetes.io/managed-by: flux
 data:
   proxy_server_config.yaml: |
     model_list:

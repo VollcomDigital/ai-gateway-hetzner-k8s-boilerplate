@@ -3,6 +3,10 @@ kind: NetworkPolicy
 metadata:
   name: litellm-postgres-allow-litellm
   namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm-postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: litellm-hetzner-k8s-boilerplate
 spec:
   podSelector:
     matchLabels:
@@ -23,6 +27,10 @@ kind: NetworkPolicy
 metadata:
   name: litellm-redis-allow-litellm
   namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm-redis
+    app.kubernetes.io/component: cache
+    app.kubernetes.io/part-of: litellm-hetzner-k8s-boilerplate
 spec:
   podSelector:
     matchLabels:

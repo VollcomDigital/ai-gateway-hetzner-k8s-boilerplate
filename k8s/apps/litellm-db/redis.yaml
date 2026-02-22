@@ -3,6 +3,11 @@ kind: Service
 metadata:
   name: litellm-redis
   namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm-redis
+    app.kubernetes.io/component: cache
+    app.kubernetes.io/part-of: litellm-hetzner-k8s-boilerplate
+    app.kubernetes.io/managed-by: flux
 spec:
   selector:
     app: litellm-redis
@@ -16,6 +21,11 @@ kind: Deployment
 metadata:
   name: litellm-redis
   namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm-redis
+    app.kubernetes.io/component: cache
+    app.kubernetes.io/part-of: litellm-hetzner-k8s-boilerplate
+    app.kubernetes.io/managed-by: flux
 spec:
   replicas: 1
   strategy:
@@ -27,6 +37,9 @@ spec:
     metadata:
       labels:
         app: litellm-redis
+        app.kubernetes.io/name: litellm-redis
+        app.kubernetes.io/component: cache
+        app.kubernetes.io/part-of: litellm-hetzner-k8s-boilerplate
     spec:
       securityContext:
         runAsNonRoot: true
@@ -95,6 +108,10 @@ kind: PersistentVolumeClaim
 metadata:
   name: litellm-redis-data
   namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm-redis
+    app.kubernetes.io/component: cache
+    app.kubernetes.io/part-of: litellm-hetzner-k8s-boilerplate
 spec:
   accessModes:
     - ReadWriteOnce
