@@ -1,0 +1,7 @@
+[allowlist]
+description = "Allow documented placeholder values in examples."
+paths = [
+  '''README\.md''',
+  '''k8s/apps/litellm/provider-keys-secret\.example\.yaml''',
+  '''k8s/apps/litellm-db/litellm-db-secret\.example\.yaml'''
+]
