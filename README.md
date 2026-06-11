@@ -1,118 +1,113 @@
-# litellm-hetzner-k8s-boilerplate
+# ai-gateway-hetzner-k8s-boilerplate
 
-AI Gateway boilerplate for deploying LiteLLM on our Hetzner Kubernetes cluster.
+Flux GitOps boilerplate for a **LiteLLM AI gateway** on Hetzner Kubernetes — alias routing, MCP RBAC, optional vLLM inference, dual network paths (public Cursor + Tailscale internal), and OTel/LGTM observability hooks.
 
-## Overview
+> **Agents:** see [AGENTS.md](AGENTS.md) · **Deploy checklist:** [tasks/todo.md](tasks/todo.md) · **Docs index:** [docs/README.md](docs/README.md)
 
-This repository contains Kubernetes app manifests for an organization-wide AI Gateway based on LiteLLM. It is designed to run on Hetzner Kubernetes with persistent storage provided by Hetzner CSI volumes.
+## Architecture decisions
 
-Core platform components like Terraform, ingress controllers, and cert-manager are intended to stay external/foundation-level and are not replaced by the app manifests in this repo.
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Gateway | LiteLLM Proxy | OpenAI-compatible API, virtual keys, MCP gateway, mature Helm chart |
+| GitOps | Flux `HelmRelease` + Kustomize overlays | Matches existing Vollcom k8s patterns |
+| Routing | Alias layer (`chat-default`, `code-default`, …) | Swap providers without touching consumers |
+| Public path | Ingress `/v1` + `/anthropic` | Cursor + Claude-native clients |
+| Internal path | Tailscale-exposed ClusterIP Service | Hermes, Open WebUI, n8n stay off the public internet |
+| Secrets | External Secrets Operator templates | No plaintext provider keys in Git |
+| Observability | OTel + Prometheus → Alloy → Tempo/Mimir | GenAI semantic conventions |
 
-## Kubernetes App Layout
+Core platform components (Terraform, ingress controller, cert-manager, Tailscale operator, Alloy) remain in your **foundation** stack — this repo ships app-layer manifests only.
+
+## Repository layout
 
 ```text
-k8s/apps/litellm/
-  helmrepository.yaml
-  helmrelease.yaml
-  configmap.yaml
-  provider-keys-secret.example.yaml
-  kustomization.yaml
-
-k8s/apps/litellm-db/
-  namespace.yaml
-  litellm-db-secret.example.yaml
-  postgres.yaml
-  redis.yaml
-  kustomization.yaml
-
-k8s/flux/
-  litellm-db-kustomization.yaml
-  litellm-kustomization.yaml
-  kustomization.yaml
-
-k8s/clusters/production/
-  kustomization.yaml
+k8s/
+  bootstrap/namespaces.yaml
+  apps/
+    litellm/base/              # HelmRelease, config, ServiceMonitor
+    litellm/bootstrap-governance/  # Idempotent teams/keys Job
+    litellm/overlays/{staging,production}/
+    litellm-db/                # Postgres, Redis, backup (+ CNPG example)
+    inference/                 # vLLM self-hosted backend for chat-cheap
+  networking/                  # Public ingress, Tailscale, NetworkPolicies
+  secrets/external-secrets/    # ESO templates
+  mcp/                         # Registry + client-template/
+  observability/               # Alloy river config, alerts, dashboards, Langfuse example
+  flux/                        # Flux Kustomization resources
+  clusters/{staging,production}/
+tasks/todo.md                  # Implementation checklist
+docs/                          # Agent trace context + docs index
+AGENTS.md                      # Instructions for coding agents
+tests/                         # Config and layout validation (pytest)
+scripts/ci-local.sh            # Local lint + kubeconform + pytest
 ```
 
-## What this includes
+## Clone for a new internal repo
 
-- LiteLLM deployment via Flux `HelmRelease`
-- Official LiteLLM Helm chart source via OCI Helm repository (`ghcr.io/berriai`)
-- Dedicated PostgreSQL deployment + PVC on `hcloud-volumes`
-- Dedicated Redis deployment + PVC on `hcloud-volumes`
-- `proxy_server_config.yaml` provided through ConfigMap and mounted into LiteLLM
+1. Fork this repository into your org.
+2. Replace placeholders:
+   - `<PUBLIC_HOST>` — public DNS for Cursor (`k8s/networking/ingress-public.yaml`)
+   - `<CERT_ISSUER>` — cert-manager ClusterIssuer name
+   - `<TAILNET_HOSTNAME>` — Tailscale hostname for internal consumers
+   - `<SECRET_STORE>` — External Secrets ClusterSecretStore name
+   - `<VLLM_MODEL_NAME>` — HuggingFace model id in `k8s/apps/inference/vllm.yaml` and proxy config
+   - `<CLIENT>` — client slug in MCP templates and per-client namespaces
+3. Wire Flux to `./k8s/clusters/production` (or `staging` for pre-prod).
+4. Follow `tasks/todo.md` through all phases.
 
-## Initial Configuration
+## Initial configuration
 
-Do **not** store plaintext secrets in this Git repository. Create Secrets out-of-band using a secret management tool.
-
-Some common options in the Kubernetes ecosystem:
-
-- SOPS (Flux can decrypt SOPS-encrypted secrets during reconciliation)
-- External Secrets Operator (AWS/GCP/Vault/etc)
-- Sealed Secrets
-
-If you just need to bootstrap quickly, you can create the Secrets manually with `kubectl`:
-
-1. Provider keys for upstream model APIs:
-
-   - Example manifest: `k8s/apps/litellm/provider-keys-secret.example.yaml`
-   - Create:
-
-     ```bash
-     kubectl -n litellm create secret generic litellm-provider-keys \
-       --from-literal=OPENAI_API_KEY='...' \
-       --from-literal=ANTHROPIC_API_KEY='...'
-     ```
-
-2. Database credentials for Postgres:
-
-   - Example manifest: `k8s/apps/litellm-db/litellm-db-secret.example.yaml`
-   - Create:
-
-     ```bash
-     kubectl -n litellm create secret generic litellm-db-secret \
-       --from-literal=username='litellm' \
-       --from-literal=password='...' \
-       --from-literal=database='litellm'
-     ```
-
-3. Storage class
-   - If your Hetzner CSI class is not `hcloud-volumes`, update `storageClassName` in:
-     - `k8s/apps/litellm-db/postgres.yaml`
-     - `k8s/apps/litellm-db/redis.yaml`
-
-LiteLLM master key is read from `PROXY_MASTER_KEY` and is managed by the Helm chart (auto-generated unless you provide your own secret).
-
-## Flux GitOps Sync
-
-This repo includes Flux `Kustomization` resources in `k8s/flux`:
-
-- `litellm-db` reconciles `./k8s/apps/litellm-db`
-- `litellm` reconciles `./k8s/apps/litellm` and `dependsOn: litellm-db`
-
-To activate this stack in an existing Flux installation, include `k8s/flux` in your cluster-level GitRepository/Kustomization entrypoint (or apply `k8s/flux/kustomization.yaml` from your existing root).
-
-For a single-path bootstrap target, use:
-
-- `./k8s/clusters/production`
-
-`k8s/clusters/production/kustomization.yaml` includes `../../flux`, so Flux can be pointed at one directory and still reconcile both `litellm-db` then `litellm`.
-
-## Developer Access with Virtual Keys
-
-Developers should not use provider root keys directly. Instead, generate LiteLLM virtual keys with scoped permissions/budgets and share only those keys.
-
-Typical flow:
-
-1. Platform team creates a virtual key in LiteLLM.
-2. Developer configures SDK to call the gateway URL.
-3. Requests are authenticated by virtual key and routed to upstream providers.
-
-Example OpenAI-compatible usage:
+Do **not** store plaintext secrets in Git. Use External Secrets (recommended) or bootstrap manually:
 
 ```bash
-export OPENAI_API_BASE="https://ai-gateway.your-domain.example"
+kubectl -n litellm create secret generic litellm-provider-keys \
+  --from-literal=OPENAI_API_KEY='...' \
+  --from-literal=ANTHROPIC_API_KEY='...'
+
+kubectl -n litellm create secret generic litellm-db-secret \
+  --from-literal=username='litellm' \
+  --from-literal=password='...' \
+  --from-literal=database='litellm'
+```
+
+Example manifests: `k8s/apps/litellm/base/provider-keys-secret.example.yaml`, `k8s/apps/litellm-db/litellm-db-secret.example.yaml`.
+
+If your Hetzner CSI storage class is not `hcloud-volumes`, update PVC manifests in `k8s/apps/litellm-db/`.
+
+## Flux GitOps sync
+
+Flux reconciles in order:
+
+1. `ai-gateway-bootstrap` → namespaces
+2. `ai-gateway-secrets` → ExternalSecrets (requires ESO + ClusterSecretStore)
+3. `litellm-db` → Postgres, Redis, backup
+4. `ai-gateway-inference` → vLLM (optional GPU node)
+5. `ai-gateway-mcp-template` → MCP client template namespace
+6. `litellm` → LiteLLM proxy (production or staging overlay)
+7. `litellm-bootstrap-governance` → teams, access groups, virtual keys Job
+8. `ai-gateway-networking` → ingress, Tailscale, NetworkPolicies
+9. `ai-gateway-observability` → PrometheusRule alerts
+
+Entrypoints:
+
+- Production: `./k8s/clusters/production`
+- Staging: `./k8s/clusters/staging`
+
+## Developer access with virtual keys
+
+Developers use **virtual keys**, never provider root keys. Each consumer gets its own key scoped to aliases and budgets.
+
+| Consumer | Network path | Alias | Notes |
+|----------|--------------|-------|-------|
+| Cursor | Public ingress | `code-default` | `/v1` or `/anthropic/v1/messages` |
+| Open WebUI | Tailscale internal | `chat-default` | Fallback to `chat-cheap` allowed |
+| Hermes | Tailscale internal | `chat-default` | Per-engineer virtual key |
+| n8n agents | Tailscale internal | `agent-default` | Max steps enforced in workflow |
+
+Example (OpenAI-compatible):
+
+```bash
+export OPENAI_API_BASE="https://<PUBLIC_HOST>/v1"
 export OPENAI_API_KEY="sk-your-virtual-key"
 ```
 
@@ -121,13 +116,26 @@ from openai import OpenAI
 
 client = OpenAI(
     api_key="sk-your-virtual-key",
-    base_url="https://ai-gateway.your-domain.example",
+    base_url="https://<TAILNET_HOSTNAME>/v1",
 )
 
 resp = client.chat.completions.create(
-    model="gpt-4o-mini",
-    messages=[{"role": "user", "content": "Hello from LiteLLM gateway"}],
+    model="chat-default",
+    messages=[{"role": "user", "content": "Hello from AI gateway"}],
 )
-
 print(resp.choices[0].message.content)
 ```
+
+## Local validation
+
+```bash
+pip install -r requirements-test.txt
+bash scripts/ci-local.sh
+pre-commit install   # optional
+```
+
+## Security
+
+Report vulnerabilities via GitHub private security advisories — see `SECURITY.md`.
+
+Agent trace propagation for n8n/LangGraph: see `docs/agent-trace-context.md`.

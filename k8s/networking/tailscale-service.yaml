@@ -1,0 +1,24 @@
+# Internal-only access for Hermes, Open WebUI, n8n via Tailscale operator.
+# Requires tailscale.com operator installed in the foundation stack.
+#
+# Replace <TAILNET_HOSTNAME> before deploy.
+apiVersion: v1
+kind: Service
+metadata:
+  name: litellm-internal
+  namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm
+    app.kubernetes.io/component: internal-api
+    ai-gateway.vollcom.io/exposure: tailnet
+  annotations:
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: <TAILNET_HOSTNAME>
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: litellm
+  ports:
+    - name: http
+      port: 4000
+      targetPort: 4000

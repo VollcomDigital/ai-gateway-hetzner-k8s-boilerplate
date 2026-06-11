@@ -1,0 +1,36 @@
+# Reference fragment: model_list entries for LiteLLM proxy.
+# Deployed config is merged in config/proxy_server_config.yaml.
+#
+# Alias policy:
+#   chat-default      — Hermes, Open WebUI (30s, fallback to chat-cheap)
+#   code-default      — Cursor (60s, NO fallback — quality over availability)
+#   agent-default     — n8n agents (120s, same-model retry only)
+#   reasoning-heavy   — complex tasks (fallback to chat-default)
+#   chat-cheap        — cost-sensitive / degraded tier
+
+model_list:
+  - model_name: chat-default
+    litellm_params:
+      model: anthropic/claude-sonnet-4-20250514
+      api_key: os.environ/ANTHROPIC_API_KEY
+      timeout: 30
+  - model_name: code-default
+    litellm_params:
+      model: anthropic/claude-sonnet-4-20250514
+      api_key: os.environ/ANTHROPIC_API_KEY
+      timeout: 60
+  - model_name: agent-default
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+      timeout: 120
+  - model_name: reasoning-heavy
+    litellm_params:
+      model: anthropic/claude-sonnet-4-20250514
+      api_key: os.environ/ANTHROPIC_API_KEY
+      timeout: 90
+  - model_name: chat-cheap
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+      timeout: 30

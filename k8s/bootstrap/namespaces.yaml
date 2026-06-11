@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-gateway
+  labels:
+    app.kubernetes.io/name: ai-gateway
+    app.kubernetes.io/part-of: ai-gateway-hetzner-k8s-boilerplate
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+  labels:
+    app.kubernetes.io/name: observability
+    app.kubernetes.io/part-of: ai-gateway-hetzner-k8s-boilerplate
+---
+# Template namespace for per-client MCP deployments.
+# Clone and replace <CLIENT> when onboarding a new engagement.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mcp-client-template
+  labels:
+    app.kubernetes.io/name: mcp-client-template
+    app.kubernetes.io/part-of: ai-gateway-hetzner-k8s-boilerplate
+    ai-gateway.vollcom.io/client: template
+    ai-gateway.vollcom.io/managed-by: platform

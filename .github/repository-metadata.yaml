@@ -1,0 +1,18 @@
+# GitHub repository metadata (source of truth for humans; sync with `gh repo edit`)
+
+name: ai-gateway-hetzner-k8s-boilerplate
+description: >
+  Flux GitOps boilerplate for a LiteLLM AI gateway on Hetzner Kubernetes —
+  alias routing, MCP RBAC, vLLM inference, dual network paths, and OTel/LGTM hooks.
+
+topics:
+  - ai-gateway
+  - litellm
+  - kubernetes
+  - hetzner
+  - fluxcd
+  - gitops
+  - mcp
+  - vllm
+  - opentelemetry
+  - cursor

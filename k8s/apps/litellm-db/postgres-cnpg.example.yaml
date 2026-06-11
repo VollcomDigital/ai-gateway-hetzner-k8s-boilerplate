@@ -1,0 +1,35 @@
+# Optional CloudNativePG cluster — replace single-node postgres.yaml for production HA.
+# Requires CNPG operator in foundation stack.
+#
+# After enabling:
+#   1. Remove postgres.yaml from k8s/apps/litellm-db/kustomization.yaml
+#   2. Update litellm helm db.endpoint to litellm-postgres-rw.litellm.svc.cluster.local
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: litellm-postgres
+  namespace: litellm
+spec:
+  instances: 3
+  storage:
+    size: 20Gi
+    storageClass: hcloud-volumes
+  bootstrap:
+    initdb:
+      database: litellm
+      owner: litellm
+      secret:
+        name: litellm-db-secret
+  backup:
+    barmanObjectStore:
+      destinationPath: s3://<BACKUP_BUCKET>/litellm-postgres
+      s3Credentials:
+        accessKeyId:
+          name: litellm-db-backup-credentials
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: litellm-db-backup-credentials
+          key: SECRET_ACCESS_KEY
+      wal:
+        compression: gzip
+    retentionPolicy: "14d"

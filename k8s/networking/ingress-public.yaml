@@ -1,0 +1,50 @@
+# Public ingress — Cursor and other external OpenAI-compatible clients.
+# Anthropic-native clients use /anthropic/v1/messages (built-in LiteLLM passthrough).
+#
+# Replace <PUBLIC_HOST> and <CERT_ISSUER> before deploy.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: litellm-public-api
+  namespace: litellm
+  labels:
+    app.kubernetes.io/name: litellm
+    app.kubernetes.io/component: public-api
+    ai-gateway.vollcom.io/exposure: public
+  annotations:
+    cert-manager.io/cluster-issuer: <CERT_ISSUER>
+    nginx.ingress.kubernetes.io/limit-rps: "30"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "2"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - <PUBLIC_HOST>
+      secretName: litellm-public-api-tls
+  rules:
+    - host: <PUBLIC_HOST>
+      http:
+        paths:
+          - path: /v1
+            pathType: Prefix
+            backend:
+              service:
+                name: litellm
+                port:
+                  number: 4000
+          - path: /anthropic
+            pathType: Prefix
+            backend:
+              service:
+                name: litellm
+                port:
+                  number: 4000
+          - path: /chat/completions
+            pathType: Prefix
+            backend:
+              service:
+                name: litellm
+                port:
+                  number: 4000

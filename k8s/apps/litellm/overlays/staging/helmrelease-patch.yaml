@@ -1,0 +1,21 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: litellm
+  namespace: flux-system
+spec:
+  values:
+    replicaCount: 1
+    pdb:
+      enabled: false
+    extraEnvVars:
+      - name: REDIS_HOST
+        value: litellm-redis.litellm.svc.cluster.local
+      - name: REDIS_PORT
+        value: "6379"
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://alloy.observability.svc.cluster.local:4317
+      - name: OTEL_SERVICE_NAME
+        value: litellm-proxy
+      - name: OTEL_RESOURCE_ATTRIBUTES
+        value: deployment.environment=staging,service.namespace=litellm

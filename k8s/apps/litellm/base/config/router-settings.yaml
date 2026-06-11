@@ -1,0 +1,32 @@
+# Reference fragment: retry, cooldown, and fallback chain settings.
+# Deployed config is merged in config/proxy_server_config.yaml.
+
+router_settings:
+  routing_strategy: simple-shuffle
+  enable_pre_call_checks: true
+  allowed_fails: 3
+  cooldown_time: 30
+  num_retries: 1
+  retry_policy:
+    TimeoutErrorRetries: 2
+    RateLimitErrorRetries: 2
+    InternalServerErrorRetries: 1
+  allowed_fails_policy:
+    BadRequestErrorAllowedFails: 1000
+    AuthenticationErrorAllowedFails: 3
+    TimeoutErrorAllowedFails: 5
+    RateLimitErrorAllowedFails: 100
+    InternalServerErrorAllowedFails: 5
+
+litellm_settings:
+  drop_params: true
+  cache: false
+  request_timeout: 30
+  num_retries: 0
+  fallbacks:
+    - chat-default:
+        - chat-cheap
+    - reasoning-heavy:
+        - chat-default
+  # code-default: intentionally NO fallback — silent downgrade is worse than fast failure for Cursor
+  # agent-default: intentionally NO mid-run model fallback — tool-calling consistency
