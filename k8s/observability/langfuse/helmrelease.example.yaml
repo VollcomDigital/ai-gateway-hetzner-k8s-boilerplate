@@ -1,0 +1,35 @@
+# Optional Langfuse prompt-level observability layer.
+# Deploy Langfuse in observability namespace separately; enable callback after Langfuse is live.
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: langfuse
+  namespace: flux-system
+spec:
+  interval: 30m
+  releaseName: langfuse
+  targetNamespace: observability
+  install:
+    createNamespace: false
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: langfuse
+      version: "1.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: langfuse
+        namespace: flux-system
+  values:
+    langfuse:
+      nextauth:
+        url: https://langfuse.<INTERNAL_HOST>
+      salt:
+        secretKeyRef:
+          name: langfuse-secrets
+          key: salt
+    postgresql:
+      deploy: true
+    clickhouse:
+      deploy: true

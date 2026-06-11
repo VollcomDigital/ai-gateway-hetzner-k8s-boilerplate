@@ -1,0 +1,50 @@
+// Alloy pipeline: scrape LiteLLM metrics, ship logs, forward OTLP to Tempo/Mimir/Loki.
+//
+// Wire this into your foundation Alloy deployment. Paths assume standard LGTM stack.
+prometheus.scrape "litellm" {
+  targets = [{
+    __address__ = "litellm.litellm.svc.cluster.local:4000",
+    job         = "litellm-proxy",
+  }]
+  forward_to = [prometheus.remote_write.mimir.receiver]
+  scrape_interval = "15s"
+  metrics_path    = "/metrics"
+}
+
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "http://mimir-gateway.observability.svc.cluster.local:8080/api/v1/push"
+  }
+}
+
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  output {
+    traces  = [otelcol.exporter.otlp.tempo.input]
+    metrics = [otelcol.exporter.prometheus.default.input]
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo.observability.svc.cluster.local:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+otelcol.exporter.prometheus "default" {
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki-gateway.observability.svc.cluster.local:3100/loki/api/v1/push"
+  }
+}

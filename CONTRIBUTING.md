@@ -1,38 +1,46 @@
-# Contributing Guide
+# Contributing
 
-Thanks for helping improve this Kubernetes boilerplate.
+Thanks for improving this AI gateway Kubernetes boilerplate.
 
 ## Prerequisites
 
-- Kubernetes and Flux familiarity.
-- Access to a non-production cluster for validation.
-- A secrets management workflow (SOPS, External Secrets, or Sealed Secrets).
+- Kubernetes and Flux familiarity
+- Access to a non-production cluster for validation
+- Secrets via External Secrets Operator (recommended), SOPS, or Sealed Secrets
 
-## Development Workflow
+## Development workflow
 
-1. Create a feature branch from `main`.
-2. Keep changes small and focused.
-3. Validate manifests and lint checks locally before opening a pull request.
-4. Include clear rationale for security-sensitive changes.
+1. Branch from `main`.
+2. Keep changes focused — one concern per PR.
+3. Run local CI before opening a PR (see below).
+4. Document operational impact for manifest changes.
 
-## Security Requirements
+## Security
 
-- Never commit plaintext credentials, tokens, or private keys.
-- Do not commit real Secret manifests (`provider-keys-secret.yaml`, `litellm-db-secret.yaml`).
-- Prefer immutable image tags and chart versions when practical.
-- Route vulnerability reports through `SECURITY.md`.
+Never commit plaintext credentials. Ignored secret paths (see `.gitignore`):
 
-## Local Quality Checks
+- `k8s/apps/litellm/base/provider-keys-secret.yaml`
+- `k8s/apps/litellm/base/master-key-secret.yaml`
+- `k8s/apps/litellm/base/observability-secrets.yaml`
+- `k8s/apps/litellm-db/litellm-db-secret.yaml`
 
-Run these checks before submitting:
+Use `*.example.yaml` templates only. Report vulnerabilities via `SECURITY.md`.
+
+## Local quality checks
 
 ```bash
-yamllint .
-markdownlint "**/*.md"
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements-test.txt yamllint
+bash scripts/ci-local.sh
+pre-commit install   # optional
 ```
 
-## Pull Request Expectations
+## Agent / automation contributors
 
-- Explain operational impact and rollback plan for changes affecting production manifests.
-- Highlight namespace, storage, and secret-handling changes explicitly.
-- Ensure CI checks pass before requesting review.
+See [AGENTS.md](AGENTS.md) for key paths, conventions, and validation commands.
+
+## Pull request expectations
+
+- Explain rollback plan for production-impacting manifest changes.
+- Call out namespace, storage, secret, and Flux ordering changes explicitly.
+- Ensure CI passes (lint, kubeconform, helm validate, pytest, security scans).

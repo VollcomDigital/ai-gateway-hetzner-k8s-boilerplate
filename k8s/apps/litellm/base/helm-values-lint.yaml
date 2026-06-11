@@ -1,0 +1,24 @@
+# Minimal values overlay for helm template/lint CI — not deployed directly.
+fullnameOverride: litellm
+replicaCount: 2
+masterkeySecretName: litellm-master-key
+masterkeySecretKey: PROXY_MASTER_KEY
+proxyConfigMap:
+  create: false
+  name: litellm-proxy-config
+  key: proxy_server_config.yaml
+db:
+  useExisting: true
+  deployStandalone: false
+  endpoint: litellm-postgres.litellm.svc.cluster.local
+  database: litellm
+  secret:
+    name: litellm-db-secret
+    usernameKey: username
+    passwordKey: password
+redis:
+  enabled: false
+environmentSecrets:
+  - litellm-provider-keys
+ingress:
+  enabled: false

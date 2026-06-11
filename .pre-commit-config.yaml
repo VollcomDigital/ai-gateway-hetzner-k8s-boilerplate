@@ -1,0 +1,34 @@
+repos:
+  - repo: local
+    hooks:
+      - id: yamllint
+        name: yamllint
+        entry: yamllint
+        language: system
+        types: [yaml]
+        exclude: ^k8s/observability/dashboards/
+      - id: markdownlint
+        name: markdownlint
+        entry: markdownlint
+        language: system
+        types: [markdown]
+      - id: gitleaks
+        name: gitleaks
+        entry: gitleaks protect --staged --verbose --config .gitleaks.toml
+        language: system
+        pass_filenames: false
+      - id: kubeconform
+        name: kubeconform
+        entry: bash scripts/kubeconform.sh
+        language: system
+        pass_filenames: false
+      - id: helm-validate
+        name: helm validate
+        entry: bash scripts/helm-validate.sh
+        language: system
+        pass_filenames: false
+      - id: pytest-config
+        name: pytest config validation
+        entry: pytest tests/ -q
+        language: system
+        pass_filenames: false

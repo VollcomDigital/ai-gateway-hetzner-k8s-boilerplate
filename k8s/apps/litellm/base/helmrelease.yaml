@@ -1,0 +1,121 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta2
+kind: HelmRelease
+metadata:
+  name: litellm
+  namespace: flux-system
+spec:
+  interval: 10m
+  releaseName: litellm
+  targetNamespace: litellm
+  install:
+    createNamespace: true
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  chart:
+    spec:
+      chart: litellm-helm
+      version: "0.1.287"
+      sourceRef:
+        kind: HelmRepository
+        name: litellm
+        namespace: flux-system
+  values:
+    fullnameOverride: litellm
+    replicaCount: 2
+
+    masterkeySecretName: litellm-master-key
+    masterkeySecretKey: PROXY_MASTER_KEY
+
+    image:
+      repository: ghcr.io/berriai/litellm-database
+      pullPolicy: IfNotPresent
+      tag: "main-v1.63.11-stable"
+
+    terminationGracePeriodSeconds: 120
+
+    lifecycle:
+      preStop:
+        exec:
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              curl -sf -H "X-Drain-Token: ${DRAIN_ENDPOINT_TOKEN}" \
+                http://127.0.0.1:4000/health/drain || true
+
+    pdb:
+      enabled: true
+      minAvailable: 1
+
+    serviceMonitor:
+      enabled: true
+      interval: 15s
+      scrapeTimeout: 10s
+
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "2"
+        memory: 2Gi
+
+    proxyConfigMap:
+      create: false
+      name: litellm-proxy-config
+      key: proxy_server_config.yaml
+
+    db:
+      useExisting: true
+      deployStandalone: false
+      endpoint: litellm-postgres.litellm.svc.cluster.local
+      database: litellm
+      secret:
+        name: litellm-db-secret
+        usernameKey: username
+        passwordKey: password
+
+    redis:
+      enabled: false
+
+    environmentSecrets:
+      - litellm-provider-keys
+      - litellm-observability-secrets
+      - litellm-drain-token
+
+    extraEnvVars:
+      - name: REDIS_HOST
+        value: litellm-redis.litellm.svc.cluster.local
+      - name: REDIS_PORT
+        value: "6379"
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://alloy.observability.svc.cluster.local:4317
+      - name: OTEL_SERVICE_NAME
+        value: litellm-proxy
+      - name: OTEL_RESOURCE_ATTRIBUTES
+        value: deployment.environment=production,service.namespace=litellm
+      - name: DRAIN_ENDPOINT_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: litellm-drain-token
+            key: token
+      - name: LANGFUSE_PUBLIC_KEY
+        valueFrom:
+          secretKeyRef:
+            name: litellm-observability-secrets
+            key: LANGFUSE_PUBLIC_KEY
+            optional: true
+      - name: LANGFUSE_SECRET_KEY
+        valueFrom:
+          secretKeyRef:
+            name: litellm-observability-secrets
+            key: LANGFUSE_SECRET_KEY
+            optional: true
+      - name: LANGFUSE_HOST
+        value: http://langfuse.observability.svc.cluster.local:3000
+
+    ingress:
+      enabled: false

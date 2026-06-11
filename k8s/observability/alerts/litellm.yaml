@@ -1,0 +1,44 @@
+groups:
+  - name: ai-gateway
+    rules:
+      - alert: LiteLLMFallbackRateHigh
+        expr: |
+          sum by (requested_model) (rate(litellm_deployment_successful_fallbacks_total[5m]))
+            / sum by (requested_model) (rate(litellm_proxy_total_requests_metric_total[5m])) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "LiteLLM fallback rate elevated for {{ $labels.requested_model }}"
+          description: "More than 5% of requests are falling back — primary deployment may be degraded."
+
+      - alert: LiteLLMProviderCooldown
+        expr: increase(litellm_deployment_cooled_down_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "LiteLLM provider cooldown activated"
+          description: "A model deployment entered cooldown — check provider health."
+
+      - alert: LiteLLMBudgetBurnVelocity
+        expr: |
+          sum by (team) (rate(litellm_spend_metric_total[1h])) * 3600 > 10
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "LiteLLM spend velocity high for team {{ $labels.team }}"
+          description: "Team spend rate exceeds threshold — investigate runaway agent."
+
+      - alert: LiteLLMHighLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le, requested_model) (rate(litellm_request_total_latency_metric_bucket[5m]))
+          ) > 30
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "LiteLLM P95 latency high for {{ $labels.requested_model }}"
+          description: "P95 request latency exceeds 30s — check provider and chain config."

@@ -1,17 +1,15 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: litellm-db
+  name: ai-gateway-bootstrap
   namespace: flux-system
 spec:
   interval: 10m
   timeout: 5m
   wait: true
   prune: true
-  dependsOn:
-    - name: ai-gateway-bootstrap
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  path: ./k8s/apps/litellm-db
+  path: ./k8s/bootstrap

@@ -1,5 +1,19 @@
-# Plaintext secrets should never be committed. Create them out-of-band (SOPS/ESO)
-# or apply them manually (kubectl) during bootstrap.
-k8s/apps/litellm/provider-keys-secret.yaml
+# Plaintext secrets — never commit. Use ESO or bootstrap manually.
+k8s/apps/litellm/base/provider-keys-secret.yaml
+k8s/apps/litellm/base/master-key-secret.yaml
+k8s/apps/litellm/base/observability-secrets.yaml
 k8s/apps/litellm-db/litellm-db-secret.yaml
 
+# OS / editor
+.DS_Store
+**/.DS_Store
+
+# Local dev and CI artifacts
+.venv/
+.build/
+.pytest_cache/
+*.pyc
+__pycache__/
+
+# Helm chart pulls (scripts/helm-validate.sh)
+.build/helm/

@@ -1,0 +1,35 @@
+# MCP server registry — must stay in sync with mcp_servers in:
+#   k8s/apps/litellm/base/config/proxy_server_config.yaml
+#
+# Replace <CLIENT> when cloning for a new engagement, then re-run bootstrap.
+mcp_servers:
+  client-<CLIENT>-wordpress:
+    url: http://mcp-wordpress.mcp-client-<CLIENT>.svc.cluster.local:8080/mcp
+    transport: http
+    auth_type: none
+    spec_version: "2025-03-26"
+    access_groups:
+      - client-<CLIENT>-engagement
+    metadata:
+      client: <CLIENT>
+      data_classification: client-confidential
+
+  client-<CLIENT>-repo:
+    url: http://mcp-github.mcp-client-<CLIENT>.svc.cluster.local:8080/mcp
+    transport: http
+    auth_type: none
+    spec_version: "2025-03-26"
+    access_groups:
+      - client-<CLIENT>-engagement
+    metadata:
+      client: <CLIENT>
+      data_classification: client-confidential
+
+  internal-docs:
+    url: http://mcp-docs.mcp-client-template.svc.cluster.local:8080/mcp
+    transport: http
+    auth_type: none
+    spec_version: "2025-03-26"
+    allow_all_keys: true
+    metadata:
+      data_classification: internal

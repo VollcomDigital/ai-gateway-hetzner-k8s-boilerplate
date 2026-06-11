@@ -1,0 +1,49 @@
+# Bootstrap template for LiteLLM teams and access groups.
+# Teams are persisted in Postgres when store_model_in_db: true.
+# Apply after first deploy using the platform runbook in tasks/todo.md.
+#
+# Replace <CLIENT> with the engagement slug (e.g. client-acme).
+
+teams:
+  - team_alias: vollcom-internal
+    max_budget: 500
+    budget_duration: 30d
+    models:
+      - chat-default
+      - code-default
+      - reasoning-heavy
+      - chat-cheap
+    metadata:
+      cost_center: internal
+      environment: production
+
+  - team_alias: automation
+    max_budget: 200
+    budget_duration: 30d
+    models:
+      - agent-default
+      - chat-cheap
+    metadata:
+      cost_center: automation
+      environment: production
+
+  - team_alias: client-<CLIENT>
+    max_budget: 100
+    budget_duration: 30d
+    models:
+      - chat-default
+      - agent-default
+    metadata:
+      cost_center: client-<CLIENT>
+      environment: production
+
+access_groups:
+  - group_name: client-<CLIENT>-engagement
+    models:
+      - chat-default
+      - agent-default
+    mcp_servers:
+      - client-<CLIENT>-wordpress
+      - client-<CLIENT>-repo
+    metadata:
+      client: <CLIENT>

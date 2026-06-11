@@ -1,0 +1,174 @@
+# Source of truth for LiteLLM proxy routing.
+# Clients MUST use alias names (chat-default, code-default, etc.), never raw provider models.
+#
+# Fragment references (for reviewers):
+#   - model-aliases.yaml      -> model_list
+#   - router-settings.yaml    -> router_settings + litellm_settings (routing)
+#   - general-settings.yaml   -> general_settings + observability callbacks
+#   - mcp/registry.yaml         -> mcp_servers (keep in sync)
+
+model_list:
+  # --- chat-default: interactive Hermes / Open WebUI ---
+  - model_name: chat-default
+    litellm_params:
+      model: anthropic/claude-sonnet-4-20250514
+      api_key: os.environ/ANTHROPIC_API_KEY
+      timeout: 30
+    model_info:
+      mode: chat
+      max_input_tokens: 200000
+  - model_name: chat-default
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+      timeout: 30
+    model_info:
+      mode: chat
+      max_input_tokens: 128000
+
+  # --- code-default: Cursor and code agents — fail fast, no silent downgrade ---
+  - model_name: code-default
+    litellm_params:
+      model: anthropic/claude-sonnet-4-20250514
+      api_key: os.environ/ANTHROPIC_API_KEY
+      timeout: 60
+    model_info:
+      mode: chat
+      max_input_tokens: 200000
+  - model_name: code-default
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+      timeout: 60
+    model_info:
+      mode: chat
+      max_input_tokens: 128000
+
+  # --- agent-default: n8n / automation — longer timeout, conservative fallback ---
+  - model_name: agent-default
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+      timeout: 120
+    model_info:
+      mode: chat
+      max_input_tokens: 128000
+  - model_name: agent-default
+    litellm_params:
+      model: anthropic/claude-sonnet-4-20250514
+      api_key: os.environ/ANTHROPIC_API_KEY
+      timeout: 120
+    model_info:
+      mode: chat
+      max_input_tokens: 200000
+
+  # --- reasoning-heavy: explicit tier for complex tasks ---
+  - model_name: reasoning-heavy
+    litellm_params:
+      model: anthropic/claude-sonnet-4-20250514
+      api_key: os.environ/ANTHROPIC_API_KEY
+      timeout: 90
+    model_info:
+      mode: chat
+      max_input_tokens: 200000
+
+  # --- chat-cheap: self-hosted vLLM primary, cloud fallback ---
+  - model_name: chat-cheap
+    litellm_params:
+      model: openai/<VLLM_MODEL_NAME>
+      api_key: local-vllm
+      api_base: http://vllm.inference.svc.cluster.local:8000/v1
+      timeout: 45
+    model_info:
+      mode: chat
+      max_input_tokens: 32768
+  - model_name: chat-cheap
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+      timeout: 30
+    model_info:
+      mode: chat
+      max_input_tokens: 128000
+
+router_settings:
+  routing_strategy: simple-shuffle
+  enable_pre_call_checks: true
+  redis_host: os.environ/REDIS_HOST
+  redis_port: os.environ/REDIS_PORT
+  allowed_fails: 3
+  cooldown_time: 30
+  num_retries: 1
+  retry_policy:
+    TimeoutErrorRetries: 2
+    RateLimitErrorRetries: 2
+    InternalServerErrorRetries: 1
+  allowed_fails_policy:
+    BadRequestErrorAllowedFails: 1000
+    AuthenticationErrorAllowedFails: 3
+    TimeoutErrorAllowedFails: 5
+    RateLimitErrorAllowedFails: 100
+    InternalServerErrorAllowedFails: 5
+
+litellm_settings:
+  drop_params: true
+  cache: false
+  callbacks: ["otel"]
+  service_callbacks: ["prometheus"]
+  success_callback: ["langfuse"]
+  turn_off_message_logging: false
+  request_timeout: 30
+  num_retries: 0
+  fallbacks:
+    - chat-default:
+        - chat-cheap
+    - reasoning-heavy:
+        - chat-default
+  context_window_fallbacks:
+    - chat-default:
+        - reasoning-heavy
+  content_policy_fallbacks: []
+
+general_settings:
+  master_key: os.environ/PROXY_MASTER_KEY
+  store_model_in_db: true
+  supported_db_objects: ["mcp"]
+  proxy_batch_write_at: 60
+  database_connection_pool_limit: 10
+  enable_drain_endpoint: true
+  drain_endpoint_token: os.environ/DRAIN_ENDPOINT_TOKEN
+  langfuse_public_key: os.environ/LANGFUSE_PUBLIC_KEY
+  langfuse_secret_key: os.environ/LANGFUSE_SECRET_KEY
+  langfuse_host: os.environ/LANGFUSE_HOST
+
+mcp_servers:
+  client-template-wordpress:
+    url: http://mcp-wordpress.mcp-client-template.svc.cluster.local:8080/mcp
+    transport: http
+    auth_type: none
+    spec_version: "2025-03-26"
+    access_groups:
+      - client-template-engagement
+    metadata:
+      client: template
+      data_classification: client-confidential
+
+  client-template-repo:
+    url: http://mcp-github.mcp-client-template.svc.cluster.local:8080/mcp
+    transport: http
+    auth_type: none
+    spec_version: "2025-03-26"
+    access_groups:
+      - client-template-engagement
+    metadata:
+      client: template
+      data_classification: client-confidential
+
+  internal-docs:
+    url: http://mcp-docs.mcp-client-template.svc.cluster.local:8080/mcp
+    transport: http
+    auth_type: none
+    spec_version: "2025-03-26"
+    allow_all_keys: true
+    metadata:
+      data_classification: internal

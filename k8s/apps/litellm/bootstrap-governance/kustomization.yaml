@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - job.yaml
+
+configMapGenerator:
+  - name: litellm-bootstrap-script
+    namespace: litellm
+    files:
+      - bootstrap_litellm_governance.py=bootstrap_litellm_governance.py
+    options:
+      disableNameSuffixHash: true

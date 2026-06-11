@@ -1,0 +1,52 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "title": "Spend by team (24h)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (team) (increase(litellm_spend_metric_total[24h]))",
+          "legendFormat": "{{team}}"
+        }
+      ]
+    },
+    {
+      "title": "Successful fallbacks by model",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (requested_model) (rate(litellm_deployment_successful_fallbacks_total[5m]))",
+          "legendFormat": "{{requested_model}}"
+        }
+      ]
+    },
+    {
+      "title": "P95 latency by model",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, requested_model) (rate(litellm_request_total_latency_metric_bucket[5m])))",
+          "legendFormat": "{{requested_model}}"
+        }
+      ]
+    },
+    {
+      "title": "Deployment cooldown events",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "increase(litellm_deployment_cooled_down_total[5m])",
+          "legendFormat": "cooldowns"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["ai-gateway", "litellm"],
+  "time": {"from": "now-24h", "to": "now"},
+  "title": "AI Gateway — LiteLLM",
+  "uid": "ai-gateway-litellm"
+}

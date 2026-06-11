@@ -1,7 +1,7 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: litellm-db
+  name: litellm
   namespace: flux-system
 spec:
   interval: 10m
@@ -9,9 +9,9 @@ spec:
   wait: true
   prune: true
   dependsOn:
-    - name: ai-gateway-bootstrap
+    - name: litellm-db
   sourceRef:
     kind: GitRepository
     name: flux-system
     namespace: flux-system
-  path: ./k8s/apps/litellm-db
+  path: ./k8s/apps/litellm/overlays/staging
